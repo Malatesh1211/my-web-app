@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Census Application</title>
+    <style>
+        /* Add your styles here */
+    </style>
+</head>
+<body>
+    <header>
+    	<img src="DSCL_logo.png" alt="Logo 1" class="logo">
+        <h1 class="header-title">Tree Census Application</h1>
+        <img src="forest logo.jpeg" alt="Logo 2" class="logo">
+        </header>
+
+    <form id="treeForm">
+        <label for="TreeName">Tree Name</label>
+        <input type="text" id="TreeName" name="TreeName" required>
+
+        <label for="uniqueId">Unique ID</label>
+        <input type="text" id="uniqueId" name="uniqueId" required>
+
+        <label for="girth">Girth (cm)</label>
+        <input type="number" id="girth" name="girth" required>
+
+        <label for="height">Height (m)</label>
+        <input type="number" id="height" name="height" required>
+
+        <label for="landmark">Landmark</label>
+        <input type="text" id="landmark" name="landmark" required>
+
+        <button type="button" onclick="getLocation()">Get Geolocation</button>
+        <p id="geoCoordinates"></p>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <section id="report">
+        <h2>Submission Report</h2>
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>Tree Name</th>
+                    <th>Unique ID</th>
+                    <th>Girth (cm)</th>
+                    <th>Height (m)</th>
+                    <th>Geolocation</th>
+                    <th>Landmark</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Report rows will be dynamically added here -->
+            </tbody>
+        </table>
+        <a id="downloadLink" style="display: none;">Download CSV</a>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Tree Census Application</p>
+    </footer>
+
+    <script>
+        const geoCoordinatesElement = document.getElementById("geoCoordinates");
+        const submissions = JSON.parse(localStorage.getItem("treeSubmissions")) || [];
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (submissions.length > 0) {
+                submissions.forEach(addRowToReport);
+            }
+        });
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                geoCoordinatesElement.textContent = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        function showPosition(position) {
+            geoCoordinatesElement.textContent = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
+        }
+
+        function showError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    geoCoordinatesElement.textContent = "User denied the request for Geolocation.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    geoCoordinatesElement.textContent = "Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    geoCoordinatesElement.textContent = "The request to get user location timed out.";
+                    break;
+                default:
+                    geoCoordinatesElement.textContent = "An unknown error occurred.";
+                    break;
+            }
+        }
+
+        document.getElementById('treeForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const treeName = document.getElementById('TreeName').value;
+            const uniqueId = document.getElementById('uniqueId').value;
+            const girth = document.getElementById('girth').value;
+            const height = document.getElementById('height').value;
+            const geoCoordinates = geoCoordinatesElement.textContent || "Not provided";
+            const landmark = document.getElementById('landmark').value;
+
+            const data = { treeName, uniqueId, girth, height, geoCoordinates, landmark };
+
+            // Add to submissions and localStorage
+            submissions.push(data);
+            localStorage.setItem("treeSubmissions", JSON.stringify(submissions));
+
+            addRowToReport(data);
+
+            alert('Tree data submitted successfully!');
+            this.reset();
+            geoCoordinatesElement.textContent = "";
+
+            generateCSV();
+        });
+
+        function addRowToReport(data) {
+            const tableBody = document.querySelector('#reportTable tbody');
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>${data.treeName}</td>
+                <td>${data.uniqueId}</td>
+                <td>${data.girth}</td>
+                <td>${data.height}</td>
+                <td>${data.geoCoordinates}</td>
+                <td>${data.landmark}</td>
+            `;
+
+            tableBody.appendChild(row);
+        }
+
+        function generateCSV() {
+            const csvContent = [
+                ["Tree Name", "Unique ID", "Girth (cm)", "Height (m)", "Geolocation", "Landmark"],
+                ...submissions.map(sub => [sub.treeName, sub.uniqueId, sub.girth, sub.height, sub.geoCoordinates, sub.landmark])
+            ]
+            .map(row => row.join(","))
+            .join("\n");
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.style.display = 'inline-block';
+            downloadLink.href = url;
+            downloadLink.download = 'tree_census_data.csv';
+            downloadLink.textContent = 'Download CSV';
+        }
+    </script>
+	<style>
+    /* General styles */
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #f4f4f9;
+    }
+
+    header {
+        background-color: #4CAF50;
+        color: white;
+        padding: 1rem;
+        text-align: center;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo {
+        max-width: 120px;
+        height: auto;
+    }
+
+    .header-title {
+        flex-grow: 1;
+        text-align: center;
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+    /* Form styles */
+    form {
+        background: white;
+        padding: 1.5rem;
+        margin: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 500px;
+    }
+
+    form label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: bold;
+    }
+
+    form input {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+
+    form button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+    form button:hover {
+        background-color: #45a049;
+    }
+
+    /* Table styles */
+    #report {
+        width: 90%;
+        margin: 1rem auto;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    table, th, td {
+        border: 1px solid #ccc;
+    }
+
+    th, td {
+        padding: 0.75rem;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    #downloadLink {
+        margin: 1rem 0;
+        padding: 0.75rem;
+        background-color: #4CAF50;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        display: inline-block;
+        font-size: 1rem;
+        text-align: center;
+    }
+
+    #downloadLink:hover {
+        background-color: #45a049;
+    }
+
+    /* Footer styles */
+    footer {
+        margin-top: auto;
+        padding: 1rem;
+        text-align: center;
+        width: 100%;
+        background-color: #333;
+        color: white;
+    }
+
+    footer .logo {
+        max-width: 100px;
+        height: auto;
+        margin-top: 0.5rem;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        header {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.2rem;
+        }
+
+        form {
+            margin: 0.5rem;
+        }
+
+        table {
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 0.5rem;
+        }
+    }
+</style>
+<footer>
+        <p>&copy; 2024 Tree Census Application</p>
+        <img src="teralogo.png" alt="Logo 2" class="logo">
+    </footer>
+</body>
+</html>
